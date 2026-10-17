@@ -1,6 +1,6 @@
 import { execFile } from 'node:child_process'
 import { EventEmitter } from 'node:events'
-import { resolve } from 'node:path'
+import { delimiter, resolve } from 'node:path'
 import { promisify } from 'node:util'
 
 import type { GatewayEvent } from '@hermes/shared/gateway-events'
@@ -131,10 +131,11 @@ export const OWNER_RECOVERY_WINDOW_MS = 60_000
 
 const bootstrapLocalGateway = async (start: boolean, recover = false): Promise<LocalGatewayGrant> => {
   const root = process.env.HERMES_PYTHON_SRC_ROOT ?? resolve(import.meta.dirname, '../../')
+  const pythonPath = [...new Set([root, ...(process.env.PYTHONPATH ?? '').split(delimiter)].filter(Boolean))].join(delimiter)
 
   const { stdout } = await promisify(execFile)(resolvePython(),
     [resolve(root, 'ui-tui/scripts/gateway_bootstrap.py'), ...(start ? ['--start'] : recover ? ['--recover'] : [])],
-    { cwd: root, env: { ...process.env, PYTHONPATH: root }, timeout: 40_000, maxBuffer: 1024 * 1024 })
+    { cwd: root, env: { ...process.env, PYTHONPATH: pythonPath }, timeout: 40_000, maxBuffer: 1024 * 1024 })
 
   return JSON.parse(stdout) as LocalGatewayGrant
 }

@@ -2,7 +2,7 @@ import { execFile } from 'node:child_process'
 import { randomUUID } from 'node:crypto'
 import { mkdir, mkdtemp, open, readFile, rm, stat } from 'node:fs/promises'
 import { homedir, tmpdir } from 'node:os'
-import { basename, join, resolve } from 'node:path'
+import { basename, delimiter, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { promisify } from 'node:util'
 
@@ -76,8 +76,10 @@ async function extractClipboardImage(path: string): Promise<boolean> {
   const python = process.env.HERMES_PYTHON?.trim() || process.env.PYTHON?.trim() ||
     (process.platform === 'win32' ? 'python' : 'python3')
 
+  const pythonPath = [...new Set([root, ...(process.env.PYTHONPATH ?? '').split(delimiter)].filter(Boolean))].join(delimiter)
+
   const { stdout } = await promisify(execFile)(python, [join(root, 'ui-tui/scripts/clipboard_image.py'), path],
-    { cwd: root, env: { ...process.env, PYTHONPATH: root }, timeout: 15_000, windowsHide: true })
+    { cwd: root, env: { ...process.env, PYTHONPATH: pythonPath }, timeout: 15_000, windowsHide: true })
 
   return stdout.trim() === 'true'
 }
